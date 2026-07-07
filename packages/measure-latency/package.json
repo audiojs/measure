@@ -1,0 +1,19 @@
+{
+  "name": "@audio/measure-latency",
+  "version": "0.0.0",
+  "description": "Round-trip latency measurement — loopback click timing for recording setups",
+  "type": "module",
+  "sideEffects": false,
+  "private": true,
+  "keywords": [
+    "audio",
+    "dsp",
+    "measurement",
+    "latency"
+  ],
+  "license": "MIT",
+  "author": "Dmitry Iv. <dfcreative@gmail.com>",
+  "engines": {
+    "node": ">=18"
+  }
+}

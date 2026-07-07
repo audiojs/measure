@@ -1,0 +1,19 @@
+{
+  "name": "@audio/measure-response",
+  "version": "0.0.0",
+  "description": "Frequency response measurement — magnitude/phase from sweep or noise (freqz-of-hardware)",
+  "type": "module",
+  "sideEffects": false,
+  "private": true,
+  "keywords": [
+    "audio",
+    "dsp",
+    "measurement",
+    "response"
+  ],
+  "license": "MIT",
+  "author": "Dmitry Iv. <dfcreative@gmail.com>",
+  "engines": {
+    "node": ">=18"
+  }
+}
