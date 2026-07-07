@@ -1,10 +1,9 @@
 {
   "name": "@audio/measure",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "sideEffects": false,
   "description": "Acoustic & system measurement — umbrella for @audio/measure-* atoms (IR capture, response, latency)",
-  "private": true,
   "workspaces": [
     "packages/*"
   ],
@@ -19,5 +18,31 @@
   "author": "Dmitry Iv. <dfcreative@gmail.com>",
   "engines": {
     "node": ">=18"
+  },
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "test": "node test.js",
+    "test:all": "npm test --workspaces --if-present && npm test",
+    "publish:all": "npm publish --workspaces && npm publish"
+  },
+  "dependencies": {
+    "@audio/measure-ir": "^1.0.0",
+    "@audio/measure-latency": "^1.0.0",
+    "@audio/measure-align": "^1.0.0",
+    "@audio/measure-response": "^1.0.0"
+  },
+  "devDependencies": {
+    "tst": "^9.4.0",
+    "@audio/synth-chirp": "file:../synth/packages/synth-chirp"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

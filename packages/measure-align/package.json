@@ -1,19 +1,32 @@
 {
   "name": "@audio/measure-align",
-  "version": "0.0.0",
-  "description": "Multi-mic phase/time alignment — cross-correlation delay + polarity + allpass rotation (Auto-Align class)",
+  "version": "1.0.0",
+  "description": "Multi-mic phase/time alignment — signed cross-correlation delay + polarity (Auto-Align class)",
   "type": "module",
   "sideEffects": false,
-  "private": true,
+  "main": "align.js",
+  "exports": {
+    ".": "./align.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "align.js"
+  ],
+  "dependencies": {
+    "@audio/measure-ir": "^1.0.0"
+  },
   "keywords": [
     "audio",
     "dsp",
     "measurement",
-    "phase-alignment"
+    "align"
   ],
   "license": "MIT",
   "author": "Dmitry Iv. <dfcreative@gmail.com>",
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
