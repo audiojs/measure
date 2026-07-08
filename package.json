@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "sideEffects": false,
-  "description": "Acoustic & system measurement — umbrella for @audio/measure-* atoms (IR capture, response, latency)",
+  "description": "Acoustic & system measurement \u2014 umbrella for @audio/measure-* atoms (IR capture, response, latency)",
   "workspaces": [
     "packages/*"
   ],
@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "tst": "^9.4.0",
-    "@audio/synth-chirp": "file:../synth/packages/synth-chirp"
+    "@audio/synth-chirp": "^1.0.0"
   },
   "publishConfig": {
     "access": "public"
