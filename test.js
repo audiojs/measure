@@ -59,3 +59,42 @@ test('response — one-pole IR matches its analytic magnitude', () => {
 		almost(db[k], analytic(freqs[k]), 0.5, f + ' Hz: ' + db[k].toFixed(2) + ' vs ' + analytic(freqs[k]).toFixed(2))
 	}
 })
+
+// ── @audio/quality ──
+import { snr, segSnr, lsd, spectralSim, modulationDepth } from '@audio/quality'
+
+test('quality — identical signals score perfect', () => {
+  let x = new Float32Array(44100)
+  for (let i = 0; i < x.length; i++) x[i] = Math.sin(2 * Math.PI * 440 * i / 44100) * 0.5
+  is(snr(x, x), Infinity, 'snr Infinity')
+  ok(segSnr(x, x) >= 35 - 1e-9, 'segSnr at clamp ceiling')
+  ok(lsd(x, x) < 1e-9, 'lsd 0')
+  ok(Math.abs(spectralSim(x, x) - 1) < 1e-9, 'spectralSim 1')
+})
+
+test('quality — added noise degrades snr/lsd monotonically', () => {
+  let n = 44100
+  let clean = new Float32Array(n), noisy = new Float32Array(n), noisier = new Float32Array(n)
+  let rnd = (s => () => (s = s * 16807 % 2147483647) / 2147483647 - 0.5)(1)
+  for (let i = 0; i < n; i++) {
+    clean[i] = Math.sin(2 * Math.PI * 440 * i / 44100) * 0.5
+    let e = rnd()
+    noisy[i] = clean[i] + e * 0.01
+    noisier[i] = clean[i] + e * 0.1
+  }
+  ok(snr(clean, noisy) > snr(clean, noisier), 'more noise = lower snr')
+  ok(lsd(clean, noisy) < lsd(clean, noisier), 'more noise = higher lsd')
+  ok(snr(clean, noisy) > 25, 'light noise still high snr')
+})
+
+test('quality — modulationDepth flags tremolo', () => {
+  let n = 44100 * 2, sr = 44100
+  let steady = new Float32Array(n), trem = new Float32Array(n)
+  for (let i = 0; i < n; i++) {
+    let s = Math.sin(2 * Math.PI * 440 * i / sr)
+    steady[i] = s * 0.5
+    trem[i] = s * 0.5 * (1 + 0.5 * Math.sin(2 * Math.PI * 8 * i / sr))
+  }
+  ok(modulationDepth(steady, [440], sr) < 0.02, 'steady tone ~0')
+  ok(modulationDepth(trem, [440], sr) > 0.2, 'tremolo detected')
+})

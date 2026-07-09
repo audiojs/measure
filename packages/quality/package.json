@@ -1,0 +1,42 @@
+{
+  "name": "@audio/quality",
+  "version": "1.0.0",
+  "description": "Objective audio quality metrics — SNR, segmental SNR, log-spectral distance, spectral similarity, noise-reduction ratio, per-partial modulation depth",
+  "type": "module",
+  "sideEffects": false,
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js"
+  ],
+  "dependencies": {
+    "fourier-transform": "^2.2.0"
+  },
+  "keywords": [
+    "audio",
+    "dsp",
+    "quality",
+    "metrics",
+    "snr",
+    "log-spectral-distance",
+    "lsd",
+    "evaluation"
+  ],
+  "license": "MIT",
+  "author": "Dmitry Iv. <dfcreative@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/audiojs/measure.git",
+    "directory": "packages/quality"
+  },
+  "homepage": "https://github.com/audiojs/measure/tree/main/packages/quality",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
