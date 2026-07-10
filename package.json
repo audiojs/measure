@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "sideEffects": false,
   "description": "Acoustic & system measurement — umbrella for @audio/measure-* atoms (IR capture, response, latency)",
