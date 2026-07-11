@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure-response",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Frequency response from an impulse response — zero-padded FFT magnitude",
   "type": "module",
   "sideEffects": false,
@@ -10,7 +10,8 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "response.js"
+    "response.js",
+    "index.d.ts"
   ],
   "dependencies": {
     "fourier-transform": "^2.2.0"
@@ -33,5 +34,7 @@
     "type": "git",
     "url": "git+https://github.com/audiojs/measure.git",
     "directory": "packages/measure-response"
-  }
+  },
+  "types": "index.d.ts",
+  "funding": "https://github.com/sponsors/audiojs"
 }

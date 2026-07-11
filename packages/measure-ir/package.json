@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure-ir",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Impulse-response capture — exponential sine sweep deconvolution (Farina 2000), self-calibrated",
   "type": "module",
   "sideEffects": false,
@@ -10,7 +10,8 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "ir.js"
+    "ir.js",
+    "index.d.ts"
   ],
   "dependencies": {
     "fourier-transform": "^2.2.0"
@@ -33,5 +34,7 @@
     "type": "git",
     "url": "git+https://github.com/audiojs/measure.git",
     "directory": "packages/measure-ir"
-  }
+  },
+  "types": "index.d.ts",
+  "funding": "https://github.com/sponsors/audiojs"
 }

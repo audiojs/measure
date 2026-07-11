@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure-latency",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Round-trip latency — FFT cross-correlation peak between reference and loopback",
   "type": "module",
   "sideEffects": false,
@@ -10,7 +10,8 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "latency.js"
+    "latency.js",
+    "index.d.ts"
   ],
   "dependencies": {
     "@audio/measure-ir": "^1.0.0"
@@ -33,5 +34,7 @@
     "type": "git",
     "url": "git+https://github.com/audiojs/measure.git",
     "directory": "packages/measure-latency"
-  }
+  },
+  "types": "index.d.ts",
+  "funding": "https://github.com/sponsors/audiojs"
 }
