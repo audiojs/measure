@@ -1,0 +1,63 @@
+{
+  "name": "@audio/measure-correct",
+  "version": "0.1.0",
+  "description": "Response correction design — measured response + target curve → FIR and/or parametric correction EQ (REW/Dirac/Acourate class)",
+  "type": "module",
+  "sideEffects": false,
+  "main": "correct.js",
+  "exports": {
+    ".": "./correct.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "correct.js",
+    "index.d.ts",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@audio/encode-wav": "^1.0.0",
+    "@audio/eq-fir": "^1.0.0",
+    "@audio/eq-parametric": "^1.0.0",
+    "@audio/measure-response": "^1.0.0",
+    "@audio/spectral-target": "^1.0.0",
+    "fourier-transform": "^2.2.0"
+  },
+  "optionalDependencies": {
+    "@audio/eq-fit": "^0.1.0"
+  },
+  "devDependencies": {
+    "@audio/biquad": "^1.0.0",
+    "@audio/decode-wav": "^1.0.0",
+    "tst": "^9.4.0"
+  },
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "audio",
+    "dsp",
+    "measurement",
+    "eq",
+    "correction",
+    "room-eq",
+    "headphone-eq",
+    "linearization",
+    "fir",
+    "parametric"
+  ],
+  "license": "MIT",
+  "author": "Dmitry Iv. <dfcreative@gmail.com>",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/audiojs/measure.git",
+    "directory": "packages/measure-correct"
+  },
+  "types": "index.d.ts",
+  "funding": "https://github.com/sponsors/audiojs"
+}

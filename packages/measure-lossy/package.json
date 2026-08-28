@@ -1,0 +1,62 @@
+{
+  "name": "@audio/measure-lossy",
+  "version": "0.1.0",
+  "description": "Lossy-transcode detection — spectral-cutoff estimation + source classification (Spek / aucdtect class)",
+  "type": "module",
+  "sideEffects": false,
+  "main": "lossy.js",
+  "exports": {
+    ".": "./lossy.js",
+    "./audio": {
+      "types": "./audio.d.ts",
+      "default": "./audio.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lossy.js",
+    "index.d.ts",
+    "audio.js",
+    "audio.d.ts"
+  ],
+  "dependencies": {
+    "@audio/spectral-ltas": "^1.1.4",
+    "fourier-transform": "^2.4.1"
+  },
+  "devDependencies": {
+    "@audio/decode": "^3.14.1",
+    "@audio/encode-mp3": "^1.2.2",
+    "@audio/encode-ogg": "^1.2.2",
+    "@audio/encode-opus": "^1.3.0",
+    "@audio/resample-sinc": "^1.1.2",
+    "audio-lena": "^3.0.1",
+    "tst": "^9.4.0"
+  },
+  "keywords": [
+    "audio",
+    "dsp",
+    "measurement",
+    "lossy",
+    "transcode",
+    "mp3",
+    "aac",
+    "spectral-cutoff",
+    "forensics"
+  ],
+  "license": "MIT",
+  "author": "Dmitry Iv. <dfcreative@gmail.com>",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/audiojs/measure.git",
+    "directory": "packages/measure-lossy"
+  },
+  "types": "index.d.ts",
+  "audio": "./audio.js",
+  "funding": "https://github.com/sponsors/audiojs"
+}

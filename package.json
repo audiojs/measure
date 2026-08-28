@@ -3,7 +3,7 @@
   "version": "1.1.3",
   "type": "module",
   "sideEffects": false,
-  "description": "Acoustic & system measurement \u2014 umbrella for @audio/measure-* atoms (IR capture, response, latency)",
+  "description": "Acoustic & system measurement — umbrella for @audio/measure-* atoms (IR capture, response, latency)",
   "workspaces": [
     "packages/*"
   ],
@@ -37,7 +37,9 @@
     "@audio/measure-latency": "^1.0.0",
     "@audio/measure-align": "^1.0.0",
     "@audio/measure-response": "^1.0.0",
-    "@audio/quality": "^1.0.0"
+    "@audio/quality": "^1.0.0",
+    "@audio/measure-lossy": "^0.1.0",
+    "@audio/measure-correct": "^0.1.0"
   },
   "devDependencies": {
     "tst": "^9.4.0",
