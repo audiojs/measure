@@ -1,5 +1,7 @@
 # @audio/measure
 
+Try it in the browser: [Room and speaker measurement](https://audiojs.dev/util/measure/). Runs on this package, nothing is uploaded.
+
 > Practical recording measurement — capture what your room/gear actually does.
 
 | Package | What |
