@@ -6,7 +6,10 @@
   "sideEffects": false,
   "main": "align.js",
   "exports": {
-    ".": "./align.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./align.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

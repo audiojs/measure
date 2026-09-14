@@ -6,7 +6,10 @@
   "sideEffects": false,
   "main": "response.js",
   "exports": {
-    ".": "./response.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./response.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

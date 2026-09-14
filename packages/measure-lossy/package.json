@@ -6,7 +6,10 @@
   "sideEffects": false,
   "main": "lossy.js",
   "exports": {
-    ".": "./lossy.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./lossy.js"
+    },
     "./audio": {
       "types": "./audio.d.ts",
       "default": "./audio.js"

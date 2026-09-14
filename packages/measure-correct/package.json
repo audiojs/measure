@@ -6,7 +6,10 @@
   "sideEffects": false,
   "main": "correct.js",
   "exports": {
-    ".": "./correct.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./correct.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

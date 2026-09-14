@@ -6,7 +6,10 @@
   "sideEffects": false,
   "main": "latency.js",
   "exports": {
-    ".": "./latency.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./latency.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

@@ -6,7 +6,10 @@
   "sideEffects": false,
   "main": "ir.js",
   "exports": {
-    ".": "./ir.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./ir.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
