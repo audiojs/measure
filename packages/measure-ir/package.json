@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure-ir",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Impulse-response capture — exponential sine sweep deconvolution (Farina 2000), self-calibrated",
   "type": "module",
   "sideEffects": false,

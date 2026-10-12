@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure-response",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Frequency response from an impulse response — zero-padded FFT magnitude",
   "type": "module",
   "sideEffects": false,

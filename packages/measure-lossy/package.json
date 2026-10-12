@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure-lossy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Lossy-transcode detection — spectral-cutoff estimation + source classification (Spek / aucdtect class)",
   "type": "module",
   "sideEffects": false,

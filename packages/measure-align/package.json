@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure-align",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Multi-mic phase/time alignment — signed cross-correlation delay + polarity (Auto-Align class)",
   "type": "module",
   "sideEffects": false,

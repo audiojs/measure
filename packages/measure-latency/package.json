@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure-latency",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Round-trip latency — FFT cross-correlation peak between reference and loopback",
   "type": "module",
   "sideEffects": false,

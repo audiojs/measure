@@ -1,6 +1,6 @@
 {
   "name": "@audio/measure-correct",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Response correction design — measured response + target curve → FIR and/or parametric correction EQ (REW/Dirac/Acourate class)",
   "type": "module",
   "sideEffects": false,
