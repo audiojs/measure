@@ -34,7 +34,8 @@
   "scripts": {
     "test": "node test.js",
     "test:all": "npm test --workspaces --if-present && npm test",
-    "publish:all": "npm publish --workspaces && npm publish"
+    "publish:all": "node ../compile/tools/tested.js && npm publish --workspaces && npm publish",
+    "prepublishOnly": "node ../compile/tools/tested.js"
   },
   "dependencies": {
     "@audio/measure-ir": "^1.0.0",

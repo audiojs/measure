@@ -35,6 +35,10 @@
     "audio-lena": "^3.0.1",
     "tst": "^9.4.0"
   },
+  "scripts": {
+    "test": "node test.js",
+    "prepublishOnly": "node ../../../compile/tools/tested.js"
+  },
   "keywords": [
     "audio",
     "dsp",
