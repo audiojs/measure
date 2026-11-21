@@ -99,6 +99,59 @@ test('quality — modulationDepth flags tremolo', () => {
   ok(modulationDepth(trem, [440], sr) > 0.2, 'tremolo detected')
 })
 
+// ── @audio/quality: stoi, estoi ──
+import { readFileSync } from 'node:fs'
+import { throws } from 'tst'
+import { stoi, estoi } from '@audio/quality'
+import { CASES, pair, talker, rng } from './packages/quality/test/speech.js'
+
+test('quality: stoi and estoi match pystoi 0.4.1 to 1e-9: 75 synthesized pairs at 8, 10, 16, 44.1 and 48 kHz', () => {
+  // pystoi's values of speech.js's pairs (white, babble and modulated noise at -10 to 20 dB; clipped, lowpassed,
+  // spectrally subtracted), made by the commands in packages/quality/test/pystoi.py
+  let { cases } = JSON.parse(readFileSync(new URL('./packages/quality/test/pystoi.json', import.meta.url)))
+  is(Object.keys(cases).length, CASES.length, 'a pystoi value for every pair')
+  let worst = {}
+  for (let c of CASES) {
+    let { clean, out } = pair(c)
+    ;[stoi(clean, out, c.fs), estoi(clean, out, c.fs)].forEach((v, k) => {
+      let key = `${c.fs} Hz ${k ? 'estoi' : 'stoi'}`, want = cases[c.name][k], d = Math.abs(v - want), w = worst[key] ??= { d: 0, n: 0 }
+      w.n++
+      if (!(d <= w.d)) Object.assign(w, { d, name: c.name, v, want })
+    })
+  }
+  for (let [key, w] of Object.entries(worst)) ok(w.d <= 1e-9, `${key}: largest |JS - pystoi| ${w.d.toExponential(1)} of ${w.n}` + (w.name ? ` (${w.name}: ${w.v} for ${w.want}; a changed speech.js needs pystoi.json made again)` : ''))
+})
+
+test('quality: stoi and estoi give 1 for the clean speech itself, rise with every 5 dB less noise, ignore gain', () => {
+  let fs = 16000, s = Float32Array.from(talker(fs, 2.5, 1)), r = rng(5), noise = s.map(() => 2 * r() - 1)
+  let power = x => x.reduce((t, v) => t + v * v, 0), ratio = power(s) / power(noise)
+  let at = snr => { let g = Math.sqrt(ratio * 10 ** (-snr / 10)); return s.map((v, i) => v + g * noise[i]) }
+  for (let f of [stoi, estoi]) {
+    let one = f(s, s, fs), y = at(0), base = f(s, y, fs)
+    ok(Math.abs(one - 1) < 1e-12, `${f.name}(clean, clean) = ${one}`)
+    let ladder = [-20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30].map(snr => f(s, at(snr), fs))
+    ok(ladder.every((v, i) => !i || v > ladder[i - 1]), `${f.name} at -20 to 30 dB SNR: ${ladder.map(v => v.toFixed(3)).join(' ')}`)
+    // gains by powers of two, exact in float32
+    ok(Math.abs(f(s.map(v => v / 256), y.map(v => v / 256), fs) - base) < 1e-12, `${f.name}: both 48 dB quieter, the same`)
+    ok(Math.abs(f(s, y.map(v => v * 32), fs) - base) < 1e-12, `${f.name}: out 30 dB louder, the same`)
+  }
+})
+
+test('quality: stoi and estoi give NaN under 30 frames of speech or for a silent reference, 0 for a silent output; unequal lengths, channels, a bad rate throw', () => {
+  // at 10 kHz n samples make ceil((n - 256)/128) frames, one fewer once joined: 30 need 4097 (pystoi: 1e-5, a warning)
+  let r = rng(7), w = Float32Array.from({ length: 4097 }, () => 2 * r() - 1), short = w.subarray(0, 4096)
+  let fs = 16000, s = Float32Array.from(talker(fs, 2.5, 1)), zero = new Float32Array(s.length)
+  for (let f of [stoi, estoi]) {
+    ok(Number.isNaN(f(short, short, 10000)), `${f.name}: 4096 samples at 10 kHz, NaN`)
+    ok(Math.abs(f(w, w, 10000) - 1) < 1e-12, `${f.name}: 4097 samples at 10 kHz, a value`)
+    ok(Number.isNaN(f(zero, s, fs)), `${f.name}: silent clean, NaN`)
+    is(f(s, zero, fs), 0, `${f.name}: silent out, 0`)
+    throws(() => f(s, s.subarray(1), fs), /RangeError.*align/, `${f.name}: unequal lengths throw`)
+    throws(() => f([s, s], [s, s], fs), /TypeError/, `${f.name}: two channels throw`)
+    for (let bad of [0, 44100.5, undefined]) throws(() => f(s, s, bad), /RangeError/, `${f.name}: fs ${bad} throws`)
+  }
+})
+
 // -- 2026-08 atoms: lossy (transcode detection) + correct (response correction); depth lives in each package's suite --
 import { lossy, correct } from './index.js'
 import { peaking, process as biquadProcess } from '@audio/biquad'
@@ -149,4 +202,9 @@ test('correct — flattens a peaked room response with a linear-phase FIR within
   let atPeak = r.correction[r.freqs.findIndex(f => f >= 120)]
   ok(atPeak < -5 && atPeak > -9, 'correction at 120 Hz ' + atPeak.toFixed(1) + ' dB')
   ok(r.maxBoost <= 6 + 1e-6, 'boost clamp')
+})
+
+test('measure: stoi and estoi are @audio/quality\'s', async () => {
+  let m = await import('./index.js')
+  is(m.stoi, stoi); is(m.estoi, estoi)
 })

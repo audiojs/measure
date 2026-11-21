@@ -74,3 +74,14 @@ export function modulationDepth(
   sr: number,
   options?: ModulationDepthOptions
 ): number
+
+/**
+ * STOI (Taal et al. 2011): intelligibility of the speech in `out` against the clean speech, about 0 to 1, rising with
+ * the share of words listeners understand (not that share). Mono, time-aligned, equal lengths, any integer `fs`
+ * (resampled to 10 kHz). NaN under 30 frames (about 0.4 s) of speech or for a silent `clean`; 0 for a silent `out`.
+ * Throws RangeError on unequal lengths or a non-integer rate, TypeError on several channels. Positional sample rate.
+ */
+export function stoi(clean: Float32Array, out: Float32Array, fs: number): number
+
+/** ESTOI (Jensen and Taal 2016): STOI with whole spectra correlated, so it holds for a masker that comes and goes (another talker, modulated noise). Inputs, NaN and throws as stoi. */
+export function estoi(clean: Float32Array, out: Float32Array, fs: number): number

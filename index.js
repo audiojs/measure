@@ -7,4 +7,4 @@ export { default as response } from '@audio/measure-response'
 export { default as lossy } from '@audio/measure-lossy'
 export { default as correct, toWavIr } from '@audio/measure-correct'
 
-export { snr, segSnr, lsd, spectralSim, nrr, speechAttenuation, goertzelEnergy, chordBalance, chordRetention, modulationDepth } from '@audio/quality'
+export { snr, segSnr, lsd, spectralSim, nrr, speechAttenuation, goertzelEnergy, chordBalance, chordRetention, modulationDepth, stoi, estoi } from '@audio/quality'
