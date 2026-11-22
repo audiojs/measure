@@ -1,7 +1,7 @@
 {
   "name": "@audio/quality",
-  "version": "1.1.0",
-  "description": "Objective audio quality metrics — SNR, segmental SNR, log-spectral distance, spectral similarity, noise-reduction ratio, per-partial modulation depth, STOI and ESTOI speech intelligibility",
+  "version": "1.2.0",
+  "description": "Objective audio quality metrics — SNR, segmental SNR, log-spectral distance, spectral similarity, noise-reduction ratio, per-partial modulation depth, STOI and ESTOI speech intelligibility, the 2f-model's MUSHRA-like score",
   "type": "module",
   "sideEffects": false,
   "main": "index.js",
@@ -30,6 +30,9 @@
     "stoi",
     "estoi",
     "intelligibility",
+    "2f-model",
+    "mushra",
+    "perceptual",
     "speech",
     "evaluation"
   ],

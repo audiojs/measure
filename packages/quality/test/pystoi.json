@@ -1,5 +1,5 @@
 {
-  "made": "node packages/quality/test/speech.js <dir> && python packages/quality/test/pystoi.py <dir> > packages/quality/test/pystoi.json",
+  "made": "node packages/quality/test/speech.js <dir> && python packages/quality/test/pystoi-values.py <dir> > packages/quality/test/pystoi.json",
   "pystoi": "0.4.1 (74872b0)",
   "numpy": "2.5.5",
   "scipy": "1.18.1",

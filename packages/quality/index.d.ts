@@ -85,3 +85,13 @@ export function stoi(clean: Float32Array, out: Float32Array, fs: number): number
 
 /** ESTOI (Jensen and Taal 2016): STOI with whole spectra correlated, so it holds for a masker that comes and goes (another talker, modulated noise). Inputs, NaN and throws as stoi. */
 export function estoi(clean: Float32Array, out: Float32Array, fs: number): number
+
+/**
+ * The 2f-model (Kastner and Herre 2019): an estimate of the MUSHRA score listeners give `out` against its reference,
+ * 0 (bad) to 100 (as the reference), for music and other sound through a codec, a separator or any processing. Mono,
+ * time-aligned, equal lengths, samples in -1..1 at the level they are heard at (full scale is taken as 92 dB SPL; a
+ * level change alone lowers the score), any integer `fs` (resampled to the model's 48 kHz). NaN for a silent `ref` or
+ * under 25 frames (0.53 s) of sound. Throws RangeError on unequal lengths or a non-integer rate, TypeError on several
+ * channels. Positional sample rate.
+ */
+export function twof(ref: Float32Array, out: Float32Array, fs: number): number

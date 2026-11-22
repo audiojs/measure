@@ -1,6 +1,6 @@
 // Speech-like signals made from seeds for the stoi and estoi tests: no recorded audio, the same samples on every run.
-// Run as a script, it writes each case's pair as 32-bit float WAV, from which pystoi.py makes pystoi.json:
-//   node packages/quality/test/speech.js <dir> && python packages/quality/test/pystoi.py <dir> > packages/quality/test/pystoi.json
+// Run as a script, it writes each case's pair as 32-bit float WAV, from which pystoi-values.py makes pystoi.json:
+//   node packages/quality/test/speech.js <dir> && python packages/quality/test/pystoi-values.py <dir> > packages/quality/test/pystoi.json
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { fft, ifft } from 'fourier-transform'

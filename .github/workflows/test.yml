@@ -28,3 +28,41 @@ jobs:
 
       - name: Run tests
         run: npm run test:all
+
+  # The reference values the tests hold stoi, estoi and twof to, made again from the references themselves: pystoi from
+  # PyPI, PQevalAudio as ported in audiojs/audio (bench/rx/peaq.py at the commit named). A committed number that its
+  # reference does not give fails here.
+  references:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: audiojs/audio
+          ref: 8428e760ae02425e7f3815e94f6f2f80abb7c30f
+          path: .audio
+          sparse-checkout: bench/rx
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm i && pip install pystoi==0.4.1
+
+      - name: STOI and ESTOI, from pystoi 0.4.1
+        run: |
+          node packages/quality/test/speech.js "$RUNNER_TEMP/speech"
+          python packages/quality/test/pystoi-values.py "$RUNNER_TEMP/speech" > "$RUNNER_TEMP/pystoi.json"
+          node packages/quality/test/same.js packages/quality/test/pystoi.json "$RUNNER_TEMP/pystoi.json"
+
+      - name: The 2f-model's two measures, from PQevalAudio
+        run: |
+          node packages/quality/test/music.js "$RUNNER_TEMP/music"
+          python packages/quality/test/pqevalaudio.py "$RUNNER_TEMP/music" .audio/bench/rx > "$RUNNER_TEMP/pqevalaudio.json"
+          node packages/quality/test/same.js packages/quality/test/pqevalaudio.json "$RUNNER_TEMP/pqevalaudio.json"

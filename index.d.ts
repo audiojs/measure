@@ -7,7 +7,7 @@ export { default as response } from '@audio/measure-response'
 export { default as lossy } from '@audio/measure-lossy'
 export { default as correct, toWavIr } from '@audio/measure-correct'
 
-export { snr, segSnr, lsd, spectralSim, nrr, speechAttenuation, goertzelEnergy, chordBalance, chordRetention, modulationDepth, stoi, estoi } from '@audio/quality'
+export { snr, segSnr, lsd, spectralSim, nrr, speechAttenuation, goertzelEnergy, chordBalance, chordRetention, modulationDepth, stoi, estoi, twof } from '@audio/quality'
 export type { AlignOptions, AlignResult } from '@audio/measure-align'
 export type { CurvePoint, CurveData, TargetPreset, CorrectBand, CorrectOptions, CorrectResult } from '@audio/measure-correct'
 export type { IROptions } from '@audio/measure-ir'

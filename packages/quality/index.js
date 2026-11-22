@@ -6,6 +6,7 @@
 //   - goertzelEnergy / chordBalance / chordRetention / modulationDepth: per-partial
 //     energy tracking — catches hop-rate beating ("crumble") that LSD misses
 //   - stoi / estoi: speech intelligibility against the clean speech (Taal et al. 2011, Jensen and Taal 2016)
+//   - twof: perceived quality against the reference, a MUSHRA-like score (the 2f-model, Kastner and Herre 2019)
 //
 // All metrics expect Float32Array inputs; equal length unless noted. Consolidated
 // from the denoise and stretch families' evaluation suites (one lsd, one source).
@@ -294,7 +295,7 @@ function intelligibility(clean, out, fs, extended) {
   if (clean.length !== out.length) throw new RangeError(`${name}: clean has ${clean.length} samples, out ${out.length}: align them and cut both to one length`)
   // no speech in the reference: nothing to understand, no measure (pystoi gives 0)
   if (!clean.some(v => v !== 0)) return NaN
-  let [x, y] = speech(to10k(clean, fs), to10k(out, fs))
+  let [x, y] = speech(resample(clean, fs, FS), resample(out, fs, FS))
   let X = envelopes(x), Y = envelopes(y), M = X.length / BANDS
   // fewer than 30 frames of speech: no segment, no measure (pystoi/stoi.py warns and gives 1e-5)
   if (M < N) return NaN
@@ -377,13 +378,14 @@ function envelopes(x) {
   return E
 }
 
-// To 10 kHz as pystoi/utils.py resample_oct does (its Octave-compatible filter, run by scipy.signal.resample_poly):
-// up by p, a zero-phase Kaiser-windowed sinc lowpass at 1/(2·max(p, q)) of the upsampled rate with a transition a
-// tenth of that and 60 dB of rejection, normalized to unit sum (times p), down by q; zeros beyond either end
+// To another rate as pystoi/utils.py resample_oct does (its Octave-compatible filter, run by
+// scipy.signal.resample_poly): up by p, a zero-phase Kaiser-windowed sinc lowpass at 1/(2·max(p, q)) of the upsampled
+// rate with a transition a tenth of that and 60 dB of rejection, normalized to unit sum (times p), down by q; zeros
+// beyond either end
 let kernels = new Map()
-function to10k(x, fs) {
-  if (fs === FS) return x
-  let g = gcd(FS, fs), p = FS / g, q = fs / g, h = kernel(p, q), half = (h.length - 1) / 2
+function resample(x, fs, to) {
+  if (fs === to) return x
+  let g = gcd(to, fs), p = to / g, q = fs / g, h = kernel(p, q), half = (h.length - 1) / 2
   let n = Math.ceil(x.length * p / q), y = new Float64Array(n)
   for (let j = 0; j < n; j++) {
     // y[j] = Σ h[t - i·p]·x[i], t = j·q + half: the filter centred on the output sample
@@ -417,3 +419,188 @@ function i0(x) {
 }
 
 const gcd = (a, b) => b ? gcd(b, a % b) : a
+
+// Perceived quality of music and other sound against its reference: the 2f-model [5], an estimate of the score
+// listeners give in a MUSHRA test (0 to 100), from two measures of the FFT ear model of ITU-R BS.1387's Basic
+// version [3]: the average modulation difference and the average distorted block.
+// [3] ITU-R BS.1387-1 (2001), "Method for objective measurements of perceived audio quality".
+// [4] P. Kabal, "An Examination and Interpretation of ITU-R BS.1387: Perceptual Evaluation of Audio Quality", TSP Lab
+//     Technical Report, McGill University, 2002 (rev. 2003): [3] restated, with the choices it leaves open. Section
+//     and equation numbers below are [4]'s.
+// [5] T. Kastner, J. Herre, "An Efficient Model for Estimating Subjective Quality of Separated Audio Source Signals",
+//     WASPAA 2019; the constants are AudioLabs' supplement of April 2020
+//     (audiolabs-erlangen.de/resources/2019-WASPAA-SEBASS), fitted to the two measures as Kabal's PQevalAudio gives them.
+// Written from [4]'s equations and held by test.js to PQevalAudio's numbers, which [5]'s constants belong to. Where
+// PQevalAudio leaves [3] or [4] this follows it, and the place says so: four band edges, the frames counted.
+
+const EAR_FS = 48000, EAR_N = 2048, EAR_HOP = 1024   // 2.1: frames of 2048 samples at 48 kHz, half overlapping
+const EAR_RATE = EAR_FS / EAR_HOP                    // Eq. 29: frames a second
+const EAR_BANDS = 109
+// 2.6: the Basic version's bands, a quarter Bark wide from 80 Hz to 18 kHz (z = 7 asinh(f / 650), Eq. 9 to 12), as
+// [3] prints them (Table 6): band i from EAR_EDGES[i] to EAR_EDGES[i + 1] Hz, centred at EAR_CENTRES[i]
+const EAR_EDGES = [
+  80, 103.445, 127.023, 150.762, 174.694, 198.849, 223.257, 247.95, 272.959, 298.317, 324.055, 350.207, 376.805,
+  403.884, 431.478, 459.622, 488.353, 517.707, 547.721, 578.434, 609.885, 642.114, 675.161, 709.071, 743.884,
+  779.647, 816.404, 854.203, 893.091, 933.119, 974.336, 1016.797, 1060.555, 1105.666, 1152.187, 1200.178, 1249.7,
+  1300.816, 1353.592, 1408.094, 1464.392, 1522.559, 1582.668, 1644.795, 1709.021, 1775.427, 1844.098, 1915.121,
+  1988.587, 2064.59, 2143.227, 2224.597, 2308.806, 2395.959, 2486.169, 2579.551, 2676.223, 2776.309, 2879.937,
+  2987.238, 3098.35, 3213.415, 3332.579, 3455.993, 3583.817, 3716.212, 3853.348, 3995.399, 4142.547, 4294.979,
+  4452.89, 4616.482, 4785.962, 4961.548, 5143.463, 5331.939, 5527.217, 5729.545, 5939.183, 6156.396, 6381.463,
+  6614.671, 6856.316, 7106.708, 7366.166, 7635.02, 7913.614, 8202.302, 8501.454, 8811.45, 9132.688, 9465.574,
+  9810.536, 10168.013, 10538.46, 10922.351, 11320.175, 11732.438, 12159.67, 12602.412, 13061.229, 13536.71,
+  14029.458, 14540.103, 15069.295, 15617.71, 16186.049, 16775.035, 17385.42, 18000
+]
+const EAR_CENTRES = [
+  91.708, 115.216, 138.87, 162.702, 186.742, 211.019, 235.566, 260.413, 285.593, 311.136, 337.077, 363.448,
+  390.282, 417.614, 445.479, 473.912, 502.95, 532.629, 562.988, 594.065, 625.899, 658.533, 692.006, 726.362,
+  761.644, 797.898, 835.17, 873.508, 912.959, 953.576, 995.408, 1038.511, 1082.938, 1128.746, 1175.995, 1224.744,
+  1275.055, 1326.992, 1380.623, 1436.014, 1493.237, 1552.366, 1613.474, 1676.641, 1741.946, 1809.474, 1879.31,
+  1951.543, 2026.266, 2103.573, 2183.564, 2266.34, 2352.008, 2440.675, 2532.456, 2627.468, 2725.832, 2827.672,
+  2933.12, 3042.309, 3155.379, 3272.475, 3393.745, 3519.344, 3649.432, 3784.176, 3923.748, 4068.324, 4218.09,
+  4373.237, 4533.963, 4700.473, 4872.978, 5051.7, 5236.866, 5428.712, 5627.484, 5833.434, 6046.825, 6267.931,
+  6497.031, 6734.42, 6980.399, 7235.284, 7499.397, 7773.077, 8056.673, 8350.547, 8655.072, 8970.639, 9297.648,
+  9636.52, 9987.683, 10351.586, 10728.695, 11119.49, 11524.47, 11944.149, 12379.066, 12829.775, 13296.85,
+  13780.887, 14282.503, 14802.338, 15341.057, 15899.345, 16477.914, 17077.504, 17690.045
+]
+const EAR_LO = Float64Array.from(EAR_CENTRES, (_, i) => EAR_EDGES[i]), EAR_HI = Float64Array.from(EAR_CENTRES, (_, i) => EAR_EDGES[i + 1])
+const EAR_FC = Float64Array.from(EAR_CENTRES)
+// PQevalAudio's table (PQCB.m) differs from [3]'s in four entries: band 66 starts at 3853.817 (3853.348), bands 28
+// and 70 end at 933.113 (933.119) and 4643.482 (4616.482), band 100 is centred at 13294.85 (13296.85). Kept, since
+// [5]'s constants were fitted to its numbers
+EAR_LO[66] = 3853.817; EAR_HI[28] = 933.113; EAR_HI[70] = 4643.482; EAR_FC[100] = 13294.85
+
+// Eq. 13: a DFT bin's energy lies over its width, and band i takes the share within its edges: EAR_SHARE[i] is the
+// band's first bin and its shares from there
+const EAR_SHARE = Array.from({ length: EAR_BANDS }, (_, i) => {
+  let df = EAR_FS / EAR_N, first = Math.round(EAR_LO[i] / df), u = []
+  for (let k = first; k <= EAR_N / 2; k++) {
+    let w = (Math.min(EAR_HI[i], (k + 0.5) * df) - Math.max(EAR_LO[i], (k - 0.5) * df)) / df
+    if (w <= 0) break
+    u.push(w)
+  }
+  return { first, u: Float64Array.from(u) }
+})
+
+// 2.2 to 2.5, one factor per bin on the DFT's power: the loudness scale (Eq. 165: a full-scale sine of 1019.5 Hz is
+// 92 dB SPL; its peak over the Hann window of Eq. 1 falls between two bins, footnote 10) and the outer and middle
+// ear's response (Eq. 6, 7)
+const EAR_WIN = Float64Array.from({ length: EAR_N }, (_, n) => 0.5 - 0.5 * Math.cos(PI2 * n / (EAR_N - 1)))
+const EAR_GAIN = (() => {
+  let w = (EAR_N - 1) / EAR_FS, d = Math.abs(1019.5 - Math.round(1019.5 * EAR_N / EAR_FS) * EAR_FS / EAR_N) * w
+  let peak = Math.sin(Math.PI * d) / (Math.PI * d * (1 - d * d)), level = 10 ** (92 / 20) / (peak * (EAR_N - 1) / 4)
+  return Float64Array.from({ length: EAR_N / 2 + 1 }, (_, k) => {
+    let f = k * EAR_FS / EAR_N / 1000
+    return k ? (level * 10 ** ((-2.184 * f ** -0.8 + 6.5 * Math.exp(-0.6 * (f - 3.3) ** 2) - 0.001 * f ** 3.6) / 20)) ** 2 : 0
+  })
+})()
+// Eq. 18: the ear's own noise in each band
+const EAR_NOISE = EAR_FC.map(f => 10 ** (0.1456 * (f / 1000) ** -0.8))
+// Eq. 22, 23: a band's energy spreads down the Bark scale by 27 dB a Bark, EAR_DOWN a band, and up by
+// 24 + 230 / fc - 2 log10(E) dB a Bark, EAR_UP[l]·E^0.05 a band
+const EAR_DZ = 1 / 4, EAR_DOWN = 10 ** (-2.7 * EAR_DZ), EAR_UP = EAR_FC.map(f => 10 ** ((-2.4 - 23 / f) * EAR_DZ))
+// Eq. 20: what a flat spectrum of unit energy spreads to, each band's norm
+const EAR_FLAT = spread(new Float64Array(EAR_BANDS).fill(1), new Float64Array(EAR_BANDS)).slice()
+// Eq. 32, 33 and 55: a band's averaging over frames, a time constant of 8 ms plus (t100 - 8 ms)·100 / fc: t100 30 ms
+// for forward masking (2.9.1), 50 ms for the modulation (4.2, "the same as used in the previous section")
+const earDecay = t100 => EAR_FC.map(f => Math.exp(-1 / (EAR_RATE * (0.008 + 100 / f * (t100 - 0.008)))))
+const EAR_MASK = earDecay(0.030), EAR_MOD = earDecay(0.050)
+// Eq. 122: the just noticeable step in dB at an excitation of L dB, c0 to c4 then d1 (d2 / L)^g
+const EAR_STEP = [-0.198719, 0.0550197, -0.00102438, 5.05622e-6, 9.01033e-11, 5.95072, 6.39468, 1.71332]
+
+/**
+ * The 2f-model's estimate [5] of the MUSHRA score of `out` against its reference, 0 to 100, both mono at `fs` Hz and
+ * time-aligned, samples in -1..1 with full scale taken as 92 dB SPL
+ */
+export function twof(ref, out, fs) {
+  if (!Number.isInteger(fs) || fs <= 0) throw new RangeError(`twof: fs must be a sample rate in Hz, got ${fs}`)
+  if (!mono(ref) || !mono(out)) throw new TypeError(`twof: one channel each: pass a Float32Array (a channel, or the channels' mean)`)
+  if (ref.length !== out.length) throw new RangeError(`twof: ref has ${ref.length} samples, out ${out.length}: align them and cut both to one length`)
+  let m = earMeasures(resample(ref, fs, EAR_FS), resample(out, fs, EAR_FS))
+  // [5], the supplement's constants; the score kept within the scale
+  return m && Math.min(100, Math.max(0, 56.1345 / (1 + (-0.0282 * m.modDiff - 0.8628) ** 2) - 27.1451 * m.adb + 86.3515))
+}
+
+// The two measures of `out` against `ref` at 48 kHz: modDiff, the average modulation difference (AvgModDiff1B, 5.2),
+// and adb, the average distorted block (ADBB, 5.6). NaN where there is too little sound for them.
+function earMeasures(ref, out) {
+  // 5.1: the data runs from the first to the last five samples of the reference whose magnitudes sum over 200 of
+  // 32768. PQevalAudio counts the frames whose middle lies within it: from the frame whose first half holds the
+  // first of those samples to the last frame whose first half ends by the last of them ([4] words it as the first
+  // and last frames holding them), so a last frame is never under half a frame of signal (6.8)
+  let n = ref.length, five = i => Math.abs(ref[i]) + Math.abs(ref[i + 1]) + Math.abs(ref[i + 2]) + Math.abs(ref[i + 3]) + Math.abs(ref[i + 4])
+  let edge = 200 / 32768, lo = 0, hi = n - 1
+  while (lo < n - 4 && !(five(lo) > edge)) lo++
+  while (hi > 3 && !(five(hi - 4) > edge)) hi--
+  let first = Math.floor(lo / EAR_HOP), last = Math.floor((hi + 1) / EAR_HOP) - 1
+  // 5.2.1: the modulation's average leaves out the first half second of the file
+  let from = Math.max(first, Math.ceil(0.5 * EAR_RATE))
+  if (lo >= n - 4 || from > last) return NaN
+
+  let R = ear(ref), T = ear(out), wsum = 0, msum = 0, steps = 0, blocks = 0
+  for (let f = 0; f <= last; f++) {
+    R.next(f * EAR_HOP); T.next(f * EAR_HOP)
+    if (f < first) continue
+    if (f >= from) {
+      let m = 0, w = 0
+      for (let k = 0; k < EAR_BANDS; k++) {
+        m += Math.abs(T.mod[k] - R.mod[k]) / (1 + R.mod[k])            // Eq. 73
+        w += R.loud[k] / (R.loud[k] + 100 * EAR_NOISE[k] ** 0.3)       // Eq. 78
+      }
+      msum += w * 100 / EAR_BANDS * m; wsum += w                       // Eq. 74, 77
+    }
+    // 5.6: each band's chance that the difference is heard, and its size in noticeable steps
+    let unheard = 1, size = 0
+    for (let k = 0; k < EAR_BANDS; k++) {
+      let r = 10 * Math.log10(R.excitation[k]), t = 10 * Math.log10(T.excitation[k]), less = R.excitation[k] > T.excitation[k]
+      let L = less ? 0.3 * r + 0.7 * t : t                             // Eq. 120
+      let [c0, c1, c2, c3, c4, d1, d2, g] = EAR_STEP
+      let s = L > 0 ? c0 + c1 * L + c2 * L ** 2 + c3 * L ** 3 + c4 * L ** 4 + d1 * (d2 / L) ** g : 1e30   // Eq. 122
+      unheard *= 0.5 ** (((r - t) / s) ** (less ? 4 : 6))              // Eq. 123, 124: something taken away is heard less than something added
+      size += Math.abs(Math.trunc(r - t)) / s                          // Eq. 125
+    }
+    if (1 - unheard > 0.5) { steps += size; blocks++ }                 // Eq. 127, 131: the frames where it is more likely heard than not
+  }
+  return { modDiff: msum / wsum, adb: !blocks ? 0 : steps ? Math.log10(steps / blocks) : -0.5 }   // Eq. 77, 132
+}
+
+// One signal through the ear model, a frame at each next(first sample): `excitation` per band (spread over frequency
+// and time, 2.8, 2.9), `mod`, the modulation of its envelope, and `loud`, its average loudness (4.2)
+function ear(x) {
+  let frame = new Float64Array(EAR_N), E = new Float64Array(EAR_BANDS), es = new Float64Array(EAR_BANDS), ef = new Float64Array(EAR_BANDS)
+  let excitation = new Float64Array(EAR_BANDS), was = new Float64Array(EAR_BANDS), loud = new Float64Array(EAR_BANDS)
+  let slope = new Float64Array(EAR_BANDS), mod = new Float64Array(EAR_BANDS)
+  return { excitation, mod, loud, next(at) {
+    for (let i = 0; i < EAR_N; i++) frame[i] = at + i < x.length ? EAR_WIN[i] * x[at + i] : 0
+    let [re, im] = fft(frame)
+    for (let i = 0; i < EAR_BANDS; i++) {
+      let { first, u } = EAR_SHARE[i], s = 0
+      for (let j = 0; j < u.length; j++) { let k = first + j; s += u[j] * EAR_GAIN[k] * (re[k] * re[k] + im[k] * im[k]) }   // Eq. 8, 14
+      E[i] = s + EAR_NOISE[i]                                          // Eq. 17 (Eq. 16's floor of 1e-12 lies far under this noise)
+    }
+    spread(E, es)
+    for (let i = 0; i < EAR_BANDS; i++) {
+      let e = es[i] /= EAR_FLAT[i], a = EAR_MASK[i], l = e ** 0.3      // Eq. 19; the 0.3 power: about loudness
+      ef[i] = a * ef[i] + (1 - a) * e; excitation[i] = Math.max(ef[i], e)   // Eq. 30
+      a = EAR_MOD[i]
+      slope[i] = a * slope[i] + (1 - a) * EAR_RATE * Math.abs(l - was[i])   // Eq. 66
+      loud[i] = a * loud[i] + (1 - a) * l                              // Eq. 65
+      mod[i] = slope[i] / (1 + loud[i] / 0.3)                          // Eq. 67
+      was[i] = l
+    }
+  } }
+}
+
+// Eq. 19 to 24 without the norm: each band's energy over its spreading function's area, spread to every band and
+// summed in the 0.4 power domain
+function spread(E, out) {
+  out.fill(0)
+  for (let l = 0; l < EAR_BANDS; l++) {
+    let up = EAR_UP[l] * E[l] ** (0.2 * EAR_DZ)
+    let area = (1 - EAR_DOWN ** (l + 1)) / (1 - EAR_DOWN) + (1 - up ** (EAR_BANDS - l)) / (1 - up) - 1   // Eq. 24
+    let e = (E[l] / area) ** 0.4, d = EAR_DOWN ** 0.4, u = up ** 0.4
+    for (let i = l, v = e; i >= 0; i--, v *= d) out[i] += v
+    for (let i = l + 1, v = e * u; i < EAR_BANDS; i++, v *= u) out[i] += v
+  }
+  for (let i = 0; i < EAR_BANDS; i++) out[i] **= 2.5
+  return out
+}

@@ -107,7 +107,7 @@ import { CASES, pair, talker, rng } from './packages/quality/test/speech.js'
 
 test('quality: stoi and estoi match pystoi 0.4.1 to 1e-9: 75 synthesized pairs at 8, 10, 16, 44.1 and 48 kHz', () => {
   // pystoi's values of speech.js's pairs (white, babble and modulated noise at -10 to 20 dB; clipped, lowpassed,
-  // spectrally subtracted), made by the commands in packages/quality/test/pystoi.py
+  // spectrally subtracted), made by the commands in packages/quality/test/pystoi-values.py
   let { cases } = JSON.parse(readFileSync(new URL('./packages/quality/test/pystoi.json', import.meta.url)))
   is(Object.keys(cases).length, CASES.length, 'a pystoi value for every pair')
   let worst = {}
@@ -204,7 +204,71 @@ test('correct — flattens a peaked room response with a linear-phase FIR within
   ok(r.maxBoost <= 6 + 1e-6, 'boost clamp')
 })
 
-test('measure: stoi and estoi are @audio/quality\'s', async () => {
+// ── @audio/quality: twof ──
+import { twof } from '@audio/quality'
+import { CASES as MUSIC, pair as musicPair, music, FS as MUSIC_FS } from './packages/quality/test/music.js'
+
+// the 2f-model's score of the two measures (Kastner and Herre 2019, AudioLabs' constants of April 2020 for PQevalAudio)
+const score2f = (modDiff, adb) => Math.min(100, Math.max(0, 56.1345 / (1 + (-0.0282 * modDiff - 0.8628) ** 2) - 27.1451 * adb + 86.3515))
+
+test('quality: twof is the 2f-model of PQevalAudio\'s two measures to 1e-9: 45 synthesized pairs at 48 kHz', () => {
+  // PQevalAudio's AvgModDiff1B and ADBB of music.js's pairs (noise 50 to 10 dB under the music, lowpassed, clipped, a
+  // wandering gain, a tremolo, a level change; silence before and after, to either side of a frame's edge; a slow rise and fall), made by
+  // the commands in packages/quality/test/pqevalaudio.py
+  let { cases } = JSON.parse(readFileSync(new URL('./packages/quality/test/pqevalaudio.json', import.meta.url)))
+  is(Object.keys(cases).length, MUSIC.length, 'a reference value for every pair')
+  let worst = { d: 0 }, seen = new Set()
+  for (let c of MUSIC) {
+    let { ref, out } = musicPair(c), want = score2f(...cases[c.name]), v = twof(ref, out, MUSIC_FS), d = Math.abs(v - want)
+    seen.add(want.toFixed(1))
+    if (!(d <= worst.d)) worst = { d, name: c.name, v, want }
+  }
+  ok(seen.size > 30, `${seen.size} different scores among the pairs`)
+  ok(worst.d <= 1e-9, `largest |twof - reference| ${worst.d.toExponential(1)} of ${MUSIC.length}` + (worst.name ? ` (${worst.name}: ${worst.v} for ${worst.want}; a changed music.js needs pqevalaudio.json made again)` : ''))
+})
+
+test('quality: twof at 44.1, 16 and 96 kHz stays within 0.3 of 100 of the 2f-model of PQevalAudio\'s measures after MATLAB\'s resample: 45 pairs each', () => {
+  // the same pairs read as sound at another rate. PQevalAudio hears 48 kHz only; the survey its port is held to brought
+  // 44.1 kHz there by MATLAB's resample (a Kaiser-windowed sinc of 10 crossings a side, beta 5), and "rates" holds the
+  // measures after it. twof resamples by pystoi's longer filter (60 dB of rejection): the scores differ by the filters
+  let { rates } = JSON.parse(readFileSync(new URL('./packages/quality/test/pqevalaudio.json', import.meta.url)))
+  for (let [fs, bound] of [[44100, 0.25], [16000, 0.3], [96000, 0.02]]) {
+    let worst = { d: 0 }
+    for (let c of MUSIC) {
+      let { ref, out } = musicPair(c), want = score2f(...rates[fs][c.name]), v = twof(ref, out, fs), d = Math.abs(v - want)
+      if (!(d <= worst.d)) worst = { d, name: c.name, v, want }
+    }
+    ok(worst.d <= bound, `${fs} Hz: largest |twof - reference| ${worst.d.toFixed(4)} of ${MUSIC.length}, within ${bound}` + (worst.name ? ` (${worst.name}: ${worst.v.toFixed(3)} for ${worst.want.toFixed(3)})` : ''))
+  }
+})
+
+test('quality: twof gives 100 for the reference itself and for noise 70 dB under it, less with every 10 dB more from 50 dB, at 48 and 44.1 kHz; a level change alone lowers it', () => {
+  let x = Float32Array.from(music(3, 5)), r = rng(5), noise = x.map(() => 2 * r() - 1)
+  let power = v => v.reduce((t, s) => t + s * s, 0), ratio = power(x) / power(noise)
+  let at = snr => { let g = Math.sqrt(ratio * 10 ** (-snr / 10)); return x.map((v, i) => v + g * noise[i]) }
+  for (let fs of [48000, 44100]) {
+    is(twof(x, x, fs), 100, `${fs} Hz: twof(ref, ref)`)
+    is(twof(x, at(70), fs), 100, `${fs} Hz: noise 70 dB under the music, not heard`)
+    let ladder = [50, 40, 30, 20, 10, 0].map(snr => twof(x, at(snr), fs))
+    ok(ladder.every((v, i) => v >= 0 && v < (i ? ladder[i - 1] : 100)), `${fs} Hz, noise 50 to 0 dB under the music: ${ladder.map(v => v.toFixed(1)).join(' ')}`)
+  }
+  let quieter = twof(x, x.map(v => v / 2), 48000)
+  ok(quieter < 60, `6 dB quieter: ${quieter.toFixed(1)} (the ear model hears levels: match them first)`)
+})
+
+test('quality: twof gives NaN for a silent reference or under 25 frames (0.53 s) of sound; unequal lengths, channels, a bad rate throw', () => {
+  let x = Float32Array.from(music(2, 5)), zero = new Float32Array(x.length)
+  ok(Number.isNaN(twof(zero, x, 48000)), 'silent ref, NaN')
+  ok(twof(x, zero, 48000) < 20, `silent out, ${twof(x, zero, 48000).toFixed(1)}`)
+  ok(Number.isNaN(twof(x.subarray(0, 25599), x.subarray(0, 25599), 48000)), '25599 samples at 48 kHz, NaN')
+  is(twof(x.subarray(0, 25600), x.subarray(0, 25600), 48000), 100, '25600 samples at 48 kHz, a value')
+  ok(Number.isNaN(twof(new Float32Array(0), new Float32Array(0), 48000)), 'no samples, NaN')
+  throws(() => twof(x, x.subarray(1), 48000), /RangeError.*align/, 'unequal lengths throw')
+  throws(() => twof([x, x], [x, x], 48000), /TypeError/, 'two channels throw')
+  for (let bad of [0, 44100.5, undefined]) throws(() => twof(x, x, bad), /RangeError/, `fs ${bad} throws`)
+})
+
+test('measure: stoi, estoi and twof are @audio/quality\'s', async () => {
   let m = await import('./index.js')
-  is(m.stoi, stoi); is(m.estoi, estoi)
+  is(m.stoi, stoi); is(m.estoi, estoi); is(m.twof, twof)
 })

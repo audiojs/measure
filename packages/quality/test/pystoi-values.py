@@ -1,5 +1,5 @@
 # pystoi's STOI and ESTOI of the pairs speech.js writes: the values test.js holds stoi and estoi to.
-#   node packages/quality/test/speech.js <dir> && python packages/quality/test/pystoi.py <dir> > packages/quality/test/pystoi.json
+#   node packages/quality/test/speech.js <dir> && python packages/quality/test/pystoi-values.py <dir> > packages/quality/test/pystoi.json
 # pip install pystoi==0.4.1 (github.com/mpariente/pystoi at 74872b0, MIT; it brings numpy and scipy)
 import sys, os, glob, json, platform
 from importlib.metadata import version
@@ -18,7 +18,7 @@ for f in sorted(glob.glob(os.path.join(d, '*.clean.wav'))):
     np.random.seed(0)
     cases[name] = [stoi(x, y, fs), stoi(x, y, fs, extended=True)]
 
-head = {'made': 'node packages/quality/test/speech.js <dir> && python packages/quality/test/pystoi.py <dir> > packages/quality/test/pystoi.json',
+head = {'made': 'node packages/quality/test/speech.js <dir> && python packages/quality/test/pystoi-values.py <dir> > packages/quality/test/pystoi.json',
         'pystoi': '0.4.1 (74872b0)', 'numpy': np.__version__, 'scipy': version('scipy'), 'python': platform.python_version()}
 print('{\n' + ',\n'.join(f'  {json.dumps(k)}: {json.dumps(v)}' for k, v in head.items()) + ',\n  "cases": {\n' +
       ',\n'.join(f'    {json.dumps(k)}: {json.dumps(v)}' for k, v in cases.items()) + '\n  }\n}')
