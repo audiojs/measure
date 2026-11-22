@@ -1,0 +1,63 @@
+name: survey
+
+# twof against the world outside this repository, on recorded instruments: the port its reference values come from
+# gives the PEAQ grades the declipping survey published from MATLAB, twof equals that port on the survey's 70 pairs,
+# and a second implementation of the 2f-model agrees. It reads another repository and PyPI, so it is a workflow of its
+# own: `test` alone decides a publish.
+on:
+  push:
+    paths: ['packages/quality/**', '.github/workflows/survey.yml']
+  pull_request:
+    paths: ['packages/quality/**', '.github/workflows/survey.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  survey:
+    runs-on: ubuntu-latest
+    env:
+      SURVEY: https://raw.githubusercontent.com/rajmic/declipping2020_codes/9b6c0e32c345e14fbda1a1b98b57c0c30507506c
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: audiojs/audio
+          ref: 8428e760ae02425e7f3815e94f6f2f80abb7c30f
+          path: .audio
+          sparse-checkout: bench/rx
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm i && pip install numpy scipy seabass-2f==0.1.0
+
+      - name: The survey's sounds and published grades
+        run: |
+          mkdir -p "$RUNNER_TEMP/survey" && cd "$RUNNER_TEMP/survey"
+          for f in a08_violin a16_clarinet a18_bassoon a25_harp a35_glockenspiel a41_celesta a42_accordion a58_guitar_sarasate a60_piano_schubert a66_wind_ensemble_stravinsky; do curl -fsSLO "$SURVEY/Sounds/$f.wav"; done
+          curl -fsSLO "$SURVEY/Numerical_results/PEAQ_declippingResults.mat"
+
+      - name: The port of PQevalAudio gives the grades MATLAB gave
+        run: python packages/quality/test/survey.py "$RUNNER_TEMP/survey" .audio/bench/rx "$RUNNER_TEMP/pairs" > "$RUNNER_TEMP/survey.json"
+
+      - name: twof equals the port and a second implementation agrees
+        run: |
+          python packages/quality/test/seabass-values.py "$RUNNER_TEMP/pairs" > "$RUNNER_TEMP/seabass.json"
+          node packages/quality/test/survey.js "$RUNNER_TEMP/pairs" "$RUNNER_TEMP/survey.json" "$RUNNER_TEMP/seabass.json"
+
+      # the synthesized pairs test.js holds twof to: short (4 to 5 s), some behind silence; the two ports of PQevalAudio
+      # read them 0.10 apart on average, 1.23 at most
+      - name: The second implementation on the synthesized pairs
+        run: |
+          node packages/quality/test/music.js "$RUNNER_TEMP/music"
+          python packages/quality/test/seabass-values.py "$RUNNER_TEMP/music" > "$RUNNER_TEMP/seabass-music.json"
+          node packages/quality/test/survey.js "$RUNNER_TEMP/music" packages/quality/test/pqevalaudio.json "$RUNNER_TEMP/seabass-music.json" 1.3
